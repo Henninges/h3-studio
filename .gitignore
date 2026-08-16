@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Studio data (NEVER publish!)
+uploads/
+outputs/
+*.mp4
+*.wav
+*.mov
+*.png
+*.jpg
+
+# macOS
+.DS_Store
