@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>h3-studio</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background:#1c1c1e; color:#fff; max-width:1400px; margin:20px auto; padding:20px; }
+  h1 { text-align:center; color:#0a84ff; margin-bottom:4px; }
+  .subtitle { text-align:center; color:#98989d; margin-top:0; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; align-items:stretch; }
+  @media (max-width:900px){ .grid { grid-template-columns:1fr; } }
+  .card { background:#2c2c2e; padding:20px; border-radius:12px; }
+  h3 { margin-top:0; color:#0a84ff; }
+  label { display:block; margin-top:12px; font-weight:bold; color:#ebebf5; }
+  input[type="text"], input[type="number"], textarea, input[type="file"], select {
+    width:100%; padding:8px; margin-top:4px; background:#3a3a3c; border:1px solid #48484a; color:#fff; border-radius:8px; box-sizing:border-box; }
+  button { width:100%; padding:15px; background:#0a84ff; color:white; border:none; border-radius:8px; font-size:18px; font-weight:bold; cursor:pointer; margin-top:20px; }
+  button:disabled { background:#48484a; cursor:not-allowed; }
+  .langbtn { width:auto; padding:6px 14px; margin:0; font-size:13px; background:#3a3a3c; color:#98989d; }
+  .langbtn.active { background:#0a84ff; color:#fff; }
+  #log { background:#000; color:#0f0; padding:12px; height:420px; overflow-y:scroll; font-family:monospace; font-size:12px; border-radius:8px; white-space:pre-wrap; }
+  video { width:100%; border-radius:8px; background:#000; min-height:420px; object-fit:contain; }
+  .slider-container { display:flex; align-items:center; gap:10px; }
+  input[type="range"] { flex:1; }
+  .hint { color:#98989d; font-size:12px; margin-top:4px; }
+  .warn { color:#ffd60a; font-size:12px; margin-top:6px; }
+  .mode-toggle { margin-top:8px; display:flex; gap:20px; align-items:center; }
+  .mode-toggle input { width:auto; }
+  .mode-toggle label { margin:0; font-weight:normal; }
+  .slotgrid { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
+  .vidrow { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:6px; }
+</style>
+</head>
+<body>
+
+<div style="display:flex; justify-content:flex-end; gap:6px;">
+  <button type="button" class="langbtn" data-lang="de" onclick="setLang('de')">DE</button>
+  <button type="button" class="langbtn" data-lang="en" onclick="setLang('en')">EN</button>
+</div>
+
+<h1>🎸 h3-studio</h1>
+<p class="subtitle" data-i18n="subtitle"></p>
+
+<form id="genForm" enctype="multipart/form-data">
+<div class="grid">
+
+  <div class="card">
+    <h3 data-i18n="directing"></h3>
+
+    <div class="mode-toggle">
+      <input type="radio" name="mode" value="simple" id="modeSimple" checked onchange="toggleMode()">
+      <label for="modeSimple" data-i18n="mode_simple"></label>
+      <input type="radio" name="mode" value="advanced" id="modeAdv" onchange="toggleMode()">
+      <label for="modeAdv" data-i18n="mode_adv"></label>
+    </div>
+
+    <div id="simpleBox">
+      <label data-i18n="prompt"></label>
+      <textarea name="prompt" rows="6" placeholder="Scene: ... Action: ... Camera: ... Look: ... Audio: ..."></textarea>
+    </div>
+
+    <div id="advBox" style="display:none">
+      <label>🏞️ Scene:</label>
+      <textarea name="scene" rows="2" placeholder="e.g. a woman lying on a white sandy beach, turquoise sea"></textarea>
+      <label>🎭 Action:</label>
+      <textarea name="action" rows="2" placeholder="e.g. the woman shown in Picture 1 sings the vocals, lips in perfect sync with the voice"></textarea>
+      <label>🎥 Camera:</label>
+      <textarea name="camera" rows="2" placeholder="e.g. gentle slow pan, subject stays in focus"></textarea>
+      <label>✨ Look:</label>
+      <textarea name="look" rows="2" placeholder="e.g. photorealistic skin, soft natural light, wearing a white bikini"></textarea>
+      <label>🔊 Audio:</label>
+      <textarea name="audio" rows="2" placeholder="e.g. clear female lead vocals, ocean ambience"></textarea>
+      <p class="hint" data-i18n="look_hint"></p>
+    </div>
+
+    <label data-i18n="refimages"></label>
+    <div class="slotgrid">
+      <input type="file" name="ref_image_1" accept="image/*" title="1">
+      <input type="file" name="ref_image_2" accept="image/*" title="2">
+      <input type="file" name="ref_image_3" accept="image/*" title="3">
+      <input type="file" name="ref_image_4" accept="image/*" title="4">
+      <input type="file" name="ref_image_5" accept="image/*" title="5">
+      <input type="file" name="ref_image_6" accept="image/*" title="6">
+      <input type="file" name="ref_image_7" accept="image/*" title="7">
+      <input type="file" name="ref_image_8" accept="image/*" title="8">
+      <input type="file" name="ref_image_9" accept="image/*" title="9">
+    </div>
+    <p class="hint" data-i18n="refimages_hint"></p>
+
+    <label data-i18n="videos"></label>
+    <div class="vidrow">
+      <input type="file" name="ref_video_1" accept="video/*">
+      <select name="video_mode_1">
+        <option value="silent" data-i18n="vid_silent"></option>
+        <option value="keep" data-i18n="vid_keep"></option>
+      </select>
+    </div>
+    <div class="vidrow">
+      <input type="file" name="ref_video_2" accept="video/*">
+      <select name="video_mode_2">
+        <option value="silent" data-i18n="vid_silent"></option>
+        <option value="keep" data-i18n="vid_keep"></option>
+      </select>
+    </div>
+    <div class="vidrow">
+      <input type="file" name="ref_video_3" accept="video/*">
+      <select name="video_mode_3">
+        <option value="silent" data-i18n="vid_silent"></option>
+        <option value="keep" data-i18n="vid_keep"></option>
+      </select>
+    </div>
+
+    <label data-i18n="audios"></label>
+    <div class="slotgrid">
+      <input type="file" name="ref_audio_1" accept="audio/*">
+      <input type="file" name="ref_audio_2" accept="audio/*">
+      <input type="file" name="ref_audio_3" accept="audio/*">
+    </div>
+    <p class="warn" data-i18n="warn_refs"></p>
+  </div>
+
+  <div class="card">
+    <h3 data-i18n="settings"></h3>
+
+    <label data-i18n="resolution"></label>
+    <select name="canvas">
+      <option value="512x512" selected data-i18n="res1"></option>
+      <option value="768x768" data-i18n="res2"></option>
+      <option value="1344x768" data-i18n="res3"></option>
+      <option value="768x1344" data-i18n="res4"></option>
+    </select>
+
+    <label><span data-i18n="frames"></span> <span id="frameVal">107</span></label>
+    <div class="slider-container">
+      <input type="range" name="frames" min="22" max="362" step="17" value="107" oninput="document.getElementById('frameVal').innerText=this.value">
+    </div>
+    <p class="hint">22 ≈ 0.9 s · 56 ≈ 2.3 s · 107 ≈ 4.5 s · 243 ≈ 10 s · 362 ≈ 15 s</p>
+
+    <label><span data-i18n="steps"></span> <span id="stepVal">20</span></label>
+    <div class="slider-container">
+      <input type="range" name="steps" min="4" max="50" step="1" value="20" oninput="document.getElementById('stepVal').innerText=this.value">
+    </div>
+    <p class="hint" data-i18n="steps_hint"></p>
+
+    <label><span data-i18n="layers"></span> <span id="layerVal">45</span></label>
+    <div class="slider-container">
+      <input type="range" name="layers" min="30" max="50" step="1" value="45" oninput="document.getElementById('layerVal').innerText=this.value">
+    </div>
+
+    <div id="advExtras" style="display:none">
+      <label data-i18n="seed"></label>
+      <input type="number" name="seed" value="42">
+      <label data-i18n="reuse"></label>
+      <select name="reuse">
+        <option value="1" data-i18n="reuse1"></option>
+        <option value="2" selected data-i18n="reuse2"></option>
+        <option value="3" data-i18n="reuse3"></option>
+      </select>
+      <label style="font-weight:normal"><input type="checkbox" name="token_reduction" style="width:auto"><span data-i18n="tokenred"></span></label>
+      <label data-i18n="firstframe"></label>
+      <input type="file" name="first_frame" accept="image/*">
+      <label data-i18n="lastframe"></label>
+      <input type="file" name="last_frame" accept="image/*">
+    </div>
+  </div>
+</div>
+
+<button type="submit" id="btnGenerate"></button>
+</form>
+
+<div class="grid" style="margin-top:20px">
+  <div class="card"><h3 data-i18n="log"></h3><div id="log" data-i18n="log_ready"></div></div>
+  <div class="card"><h3 data-i18n="result"></h3><video id="videoPlayer" controls></video></div>
+</div>
+
+<script>
+let currentLang = 'en';
+let busy = false;
+
+const I18N = {
+  en: {
+    subtitle:"Native Apple Silicon inference · unofficial community project",
+    directing:"📝 Direction & Media", mode_simple:"Simple", mode_adv:"Advanced (Context-IR)",
+    prompt:"Prompt:", look_hint:"Empty fields are filled with sensible defaults by the text interpreter. ALWAYS mention clothing explicitly!",
+    refimages:"🖼️ Reference images (order = Picture 1…9):",
+    refimages_hint:"Tip: multiple angles of the same person = maximum character consistency. Empty slots are ignored.",
+    videos:"🎞️ Video references (optional):",
+    vid_silent:"ignore audio (song from audio slots)", vid_keep:"keep embedded audio",
+    audios:"🎵 Audio references (2–15 s each, total ≤ 15 s):",
+    warn_refs:"⚠️ Audio always needs at least one image or video! Do not mix references (Ref2VA) with first/last frame (FL2VA)!",
+    settings:"⚙️ Settings", resolution:"Resolution:",
+    res1:"512×512 – quick test", res2:"768×768 – high quality (much slower!)",
+    res3:"1344×768 – landscape", res4:"768×1344 – portrait",
+    frames:"Duration (frames):", steps:"Steps:",
+    steps_hint:"4–10 = quick preview · 20 = standard · 50 = reference quality",
+    layers:"Layers:", seed:"Seed (same seed = comparable takes):", reuse:"Reuse:",
+    reuse1:"1 – exact", reuse2:"2 – standard", reuse3:"3 – fast",
+    tokenred:" Token reduction (~25% faster, may change composition)",
+    firstframe:"First frame (FL2VA):", lastframe:"Last frame (FL2VA):",
+    btn:"🎬 Generate video", btn_busy:"Generating... please wait", btn_new:"🎬 Generate new video",
+    log:"📟 Live log", result:"🎥 Result", log_ready:"Ready. Waiting for the first take...",
+    log_done:"Done! Loading video...", log_error:"Error: "
+  },
+  de: {
+    subtitle:"Native Apple Silicon Inferenz · inoffizielles Community-Projekt",
+    directing:"📝 Regie & Medien", mode_simple:"Einfach", mode_adv:"Advanced (Context-IR)",
+    prompt:"Prompt:", look_hint:"Leere Felder füllt der Text-Interpreter mit sinnvollen Defaults. Kleidung IMMER explizit nennen!",
+    refimages:"🖼️ Referenzbilder (Reihenfolge = Picture 1…9):",
+    refimages_hint:"Tipp: Mehrere Winkel derselben Person = maximale Charakter-Konsistenz. Leere Slots werden ignoriert.",
+    videos:"🎞️ Video-Referenzen (optional):",
+    vid_silent:"Ton ignorieren (Song aus Audio-Slots)", vid_keep:"eingebetteten Ton behalten",
+    audios:"🎵 Audio-Referenzen (je 2–15 s, Summe ≤ 15 s):",
+    warn_refs:"⚠️ Audio braucht immer mindestens ein Bild oder Video! Referenzen (Ref2VA) nicht mit First/Last-Frame (FL2VA) mischen!",
+    settings:"⚙️ Einstellungen", resolution:"Auflösung:",
+    res1:"512×512 – schneller Test", res2:"768×768 – hohe Qualität (viel langsamer!)",
+    res3:"1344×768 – Querformat", res4:"768×1344 – Hochformat",
+    frames:"Dauer (Frames):", steps:"Steps:",
+    steps_hint:"4–10 = Quick-Preview · 20 = Standard · 50 = Referenzqualität",
+    layers:"Layers:", seed:"Seed (gleicher Seed = vergleichbare Takes):", reuse:"Reuse:",
+    reuse1:"1 – exakt", reuse2:"2 – Standard", reuse3:"3 – schnell",
+    tokenred:" Token-Reduction (~25 % schneller, kann Komposition ändern)",
+    firstframe:"First Frame (FL2VA):", lastframe:"Last Frame (FL2VA):",
+    btn:"🎬 Video generieren", btn_busy:"Generiere... bitte warten", btn_new:"🎬 Neues Video generieren",
+    log:"📟 Live-Log", result:"🎥 Ergebnis", log_ready:"Bereit. Warte auf den ersten Take...",
+    log_done:"Fertig! Lade Video...", log_error:"Fehler: "
+  }
+};
+
+function setLang(lang){
+  currentLang = lang;
+  localStorage.setItem('h3studio_lang', lang);
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const k = el.getAttribute('data-i18n');
+    if (I18N[lang][k] !== undefined) el.textContent = I18N[lang][k];
+  });
+  const btn = document.getElementById('btnGenerate');
+  btn.innerText = busy ? I18N[lang].btn_busy : I18N[lang].btn;
+  document.querySelectorAll('.langbtn').forEach(b=>b.classList.toggle('active', b.dataset.lang===lang));
+}
+
+function toggleMode() {
+  const adv = document.getElementById('modeAdv').checked;
+  document.getElementById('simpleBox').style.display = adv ? 'none'  : 'block';
+  document.getElementById('advBox').style.display    = adv ? 'block' : 'none';
+  document.getElementById('advExtras').style.display = adv ? 'block' : 'none';
+}
+
+document.getElementById('genForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('btnGenerate');
+  const log = document.getElementById('log');
+  const video = document.getElementById('videoPlayer');
+  busy = true;
+  btn.disabled = true; btn.innerText = I18N[currentLang].btn_busy;
+  log.innerHTML = ''; video.style.display = 'none';
+
+  const formData = new FormData(e.target);
+  try {
+    const response = await fetch('/generate', { method:'POST', body: formData });
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      for (const line of decoder.decode(value).split('\n')) {
+        if (line.startsWith('data: ')) {
+          const data = line.substring(6);
+          if (data === 'DONE') log.innerHTML += '<strong style="color:#0a84ff;">' + I18N[currentLang].log_done + '</strong>\n';
+          else if (data.startsWith('ERROR')) log.innerHTML += '<strong style="color:red;">' + data + '</strong>\n';
+          else log.innerHTML += data + '\n';
+          log.scrollTop = log.scrollHeight;
+        }
+      }
+    }
+    video.src = '/video?t=' + new Date().getTime();
+    video.style.display = 'block';
+  } catch (err) { log.innerHTML += I18N[currentLang].log_error + err + '\n'; }
+  finally { busy = false; btn.disabled = false; btn.innerText = I18N[currentLang].btn_new; }
+});
+
+setLang(localStorage.getItem('h3studio_lang') || 'en');
+</script>
+</body>
+</html>
