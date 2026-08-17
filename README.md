@@ -1,6 +1,4 @@
-cd ~/Desktop/ai-studio/h3-studio
-cat > README.md << 'ENDREADME'
-# h3-studio 🎬
+h3-studio 🎬
 
 A bilingual (EN/DE) web GUI for [antirez/h3.c](https://github.com/antirez/h3.c) – native MiniMax-H3 audio+video inference on Apple Silicon.
 
