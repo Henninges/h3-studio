@@ -1,6 +1,8 @@
-h3-studio 🎬
+# h3-studio 🎬
 
-A bilingual (EN/DE) web GUI for [antirez/h3.c](https://github.com/antirez/h3.c) – native MiniMax-H3 audio+video inference on Apple Silicon.
+A bilingual (EN/DE) web GUI for [antirez/h3.c](https://github.com/antirez/h3.c) focused on the **music-video workflow**: lip-synced video from reference image + audio in a single pass.
+
+> **Note:** There's also [PR #45](https://github.com/antirez/h3.c/pull/45) "H3 Studio" – a native macOS desktop app with hardware-aware presets. This project (h3-studio) is a separate, web-based GUI specializing in audio+video conditioning and multilingual UI.
 
 > **Unofficial community project.** Not affiliated with antirez or MiniMax.
 
