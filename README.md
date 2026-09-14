@@ -73,10 +73,15 @@ References carry pose cues! A back-view picture may make the model turn the pers
 Audio: 2–15 s, pick a segment with continuous vocals for best sync.
 Ref2VA (images/videos/audio) and FL2VA (first/last frame) cannot be mixed.
 
+Community & Cross-pollination
+Open source thrives when we build on each other's work. This project has learned from and inspired:
+skaiy/h3.c-studio – Another web GUI for h3.c with storyboard/chaining features. Our Context-IR smart defaults and --ref-audio conditioning inspired features there; their Turbo LoRA integration and resumable checkpoints show what's possible. Different tools for different workflows: theirs for multi-shot storytelling, ours for music videos with native audio+video conditioning.
+
 Roadmap
-Chunked 5 s workflow: first-frame chaining + FFmpeg concat button
+Turbo LoRA folding support (PR #14 tooling: 5-6 steps instead of 20, ~2x faster)
+Song storyboard: cut tracks into ≤15s segments, render each with same references + segment audio, auto-concat
+Chunked 5s workflow: first-frame chaining + FFmpeg concat button
 Progress bar parsed from the live log
-Turbo-LoRA fast preset (once h3.c PR #14 lands)
 768p quality presets
 
 Credits & License
