@@ -6,7 +6,6 @@ app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def find_h3_home():
-    """Findet den Ordner mit h3-Binary + MiniMax-H3-Gewichten."""
     candidates = [
         os.environ.get("H3_HOME", ""),
         BASE_DIR,
@@ -25,7 +24,6 @@ OUTPUT_FOLDER = os.path.join(BASE_DIR, "outputs")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-# ---- Der "Text-Interpreter": Context-IR-Defaults für leere Felder ----
 DEFAULTS = {
     "scene":  "the person shown in the reference pictures, in a natural, detailed setting",
     "action": "the person sings the vocals of the song, lips move in perfect sync with the voice, natural blinking, subtle facial expression",
@@ -64,7 +62,6 @@ def generate():
     if H3_HOME is None:
         return error_stream("h3 binary / MiniMax-H3 not found. Put h3-studio next to h3.c or set H3_HOME.")
 
-    # ---- Prompt: Simple oder Advanced (Context-IR) ----
     if request.form.get('mode') == 'advanced':
         prompt = build_context_ir(request.form)
     else:
@@ -72,25 +69,43 @@ def generate():
         if not prompt:
             prompt = build_context_ir(request.form)
 
-    canvas = request.form.get('canvas', '512x512')
-    width, height = canvas.split('x')
+    # ---- Modell wählen: Standard oder gefoldetes Turbo ----
+    turbo = request.form.get('model') == 'turbo'
+    model_dir = os.path.join(H3_HOME, "MiniMax-H3-Turbo" if turbo else "MiniMax-H3")
+    if turbo and not os.path.isdir(model_dir):
+        return error_stream("Turbo model not found. Fold it first (see README: tools/fold_turbo_lora.py).")
+
+    # ---- Quality-Preset (kein --token-reduction: verursacht Geisterbilder!) ----
+    quality = request.form.get('quality', 'balanced')
+    if quality == 'fast':
+        width, height = '512', '512'
+        reuse = '3'
+    elif quality == 'high':
+        width, height = '768', '768'
+        reuse = '2'
+    else:
+        width, height = '512', '512'
+        reuse = '2'
+
+    # ---- Turbo erzwingt destillierte Schedule: 6 Steps, reuse 1 (PR #14 Warnung!) ----
+    if turbo:
+        steps, reuse = '6', '1'
+    else:
+        steps = request.form.get('steps', '20')
 
     out_path = os.path.join(OUTPUT_FOLDER, "result.mp4")
     cmd = [
-        os.path.join(H3_HOME, "h3"), "-d", os.path.join(H3_HOME, "MiniMax-H3"),
+        os.path.join(H3_HOME, "h3"), "-d", model_dir,
         "-p", prompt,
         "--width", width, "--height", height,
         "--frames", request.form.get('frames', '107'),
-        "--steps",  request.form.get('steps', '20'),
+        "--steps",  steps,
         "--layers", request.form.get('layers', '45'),
-        "--reuse",  request.form.get('reuse', '2'),
+        "--reuse",  reuse,
         "--seed",   request.form.get('seed', '42'),
         "--profile", "-o", out_path,
     ]
-    if request.form.get('token_reduction'):
-        cmd.append("--token-reduction")
 
-    # ---- Referenzen einsammeln (leere Slots werden ignoriert) ----
     imgs = [p for p in (save_upload(f'ref_image_{i}', f'img{i}') for i in range(1, 10)) if p]
     auds = [p for p in (save_upload(f'ref_audio_{i}', f'aud{i}') for i in range(1, 4)) if p]
     vids = []
@@ -101,13 +116,11 @@ def generate():
     first = save_upload('first_frame', 'first')
     last  = save_upload('last_frame', 'last')
 
-    # ---- Schutzschaltungen ----
     if (imgs or auds or vids) and (first or last):
         return error_stream("References (Ref2VA) and first/last frame (FL2VA) cannot be combined!")
     if auds and not imgs and not vids:
         return error_stream("Audio references need at least one image or video!")
 
-    # Reihenfolge wichtig: Bilder -> Videos -> Audios
     for p in imgs:
         cmd.extend(["--ref-image", p])
     for p, mode in vids:
@@ -122,8 +135,10 @@ def generate():
     def stream():
         for pline in prompt.split("\n"):
             yield f"data: [Prompt] {pline}\n\n"
+        if turbo:
+            yield "data: [Model] Turbo LoRA folded checkpoint - 6 steps, reuse 1\n\n"
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                                   stderr=subprocess.STDOUT, text=True)
+                                   stderr=subprocess.STDOUT, text=True, cwd=H3_HOME)
         for line in iter(process.stdout.readline, ''):
             yield f"data: {line.strip()}\n\n"
         process.stdout.close()
