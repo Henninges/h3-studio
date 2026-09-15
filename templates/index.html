@@ -23,6 +23,7 @@
   video { width:100%; border-radius:8px; background:#000; min-height:420px; object-fit:contain; }
   .slider-container { display:flex; align-items:center; gap:10px; }
   input[type="range"] { flex:1; }
+  input[type="range"]:disabled { opacity:0.4; }
   .hint { color:#98989d; font-size:12px; margin-top:4px; }
   .warn { color:#ffd60a; font-size:12px; margin-top:6px; }
   .mode-toggle { margin-top:8px; display:flex; gap:20px; align-items:center; }
@@ -123,12 +124,17 @@
   <div class="card">
     <h3 data-i18n="settings"></h3>
 
-    <label data-i18n="resolution"></label>
-    <select name="canvas">
-      <option value="512x512" selected data-i18n="res1"></option>
-      <option value="768x768" data-i18n="res2"></option>
-      <option value="1344x768" data-i18n="res3"></option>
-      <option value="768x1344" data-i18n="res4"></option>
+    <label data-i18n="model"></label>
+    <select name="model" onchange="syncTurbo()">
+      <option value="standard" selected data-i18n="m_std"></option>
+      <option value="turbo" data-i18n="m_turbo"></option>
+    </select>
+
+    <label data-i18n="quality"></label>
+    <select name="quality">
+      <option value="fast" data-i18n="q_fast"></option>
+      <option value="balanced" selected data-i18n="q_balanced"></option>
+      <option value="high" data-i18n="q_high"></option>
     </select>
 
     <label><span data-i18n="frames"></span> <span id="frameVal">107</span></label>
@@ -151,13 +157,6 @@
     <div id="advExtras" style="display:none">
       <label data-i18n="seed"></label>
       <input type="number" name="seed" value="42">
-      <label data-i18n="reuse"></label>
-      <select name="reuse">
-        <option value="1" data-i18n="reuse1"></option>
-        <option value="2" selected data-i18n="reuse2"></option>
-        <option value="3" data-i18n="reuse3"></option>
-      </select>
-      <label style="font-weight:normal"><input type="checkbox" name="token_reduction" style="width:auto"><span data-i18n="tokenred"></span></label>
       <label data-i18n="firstframe"></label>
       <input type="file" name="first_frame" accept="image/*">
       <label data-i18n="lastframe"></label>
@@ -189,14 +188,17 @@ const I18N = {
     vid_silent:"ignore audio (song from audio slots)", vid_keep:"keep embedded audio",
     audios:"🎵 Audio references (2–15 s each, total ≤ 15 s):",
     warn_refs:"⚠️ Audio always needs at least one image or video! Do not mix references (Ref2VA) with first/last frame (FL2VA)!",
-    settings:"⚙️ Settings", resolution:"Resolution:",
-    res1:"512×512 – quick test", res2:"768×768 – high quality (much slower!)",
-    res3:"1344×768 – landscape", res4:"768×1344 – portrait",
+    settings:"⚙️ Settings",
+    model:"Model:",
+    m_std:"Standard (20 steps, proven quality)",
+    m_turbo:"⚡ Turbo LoRA (6 steps, ~1.5x faster – drafts & iteration; finals on Standard)",
+    quality:"Quality preset:",
+    q_fast:"⚡ Fast – 512p quick preview (clean)",
+    q_balanced:"⚖️ Balanced – 512p clean & stable (recommended)",
+    q_high:"🎬 High – 768p native (watch memory, short clips)",
     frames:"Duration (frames):", steps:"Steps:",
-    steps_hint:"4–10 = quick preview · 20 = standard · 50 = reference quality",
-    layers:"Layers:", seed:"Seed (same seed = comparable takes):", reuse:"Reuse:",
-    reuse1:"1 – exact", reuse2:"2 – standard", reuse3:"3 – fast",
-    tokenred:" Token reduction (~25% faster, may change composition)",
+    steps_hint:"4–10 = quick preview · 20 = standard · 50 = reference quality (locked to 6 in Turbo mode)",
+    layers:"Layers:", seed:"Seed (same seed = comparable takes):",
     firstframe:"First frame (FL2VA):", lastframe:"Last frame (FL2VA):",
     btn:"🎬 Generate video", btn_busy:"Generating... please wait", btn_new:"🎬 Generate new video",
     log:"📟 Live log", result:"🎥 Result", log_ready:"Ready. Waiting for the first take...",
@@ -212,14 +214,17 @@ const I18N = {
     vid_silent:"Ton ignorieren (Song aus Audio-Slots)", vid_keep:"eingebetteten Ton behalten",
     audios:"🎵 Audio-Referenzen (je 2–15 s, Summe ≤ 15 s):",
     warn_refs:"⚠️ Audio braucht immer mindestens ein Bild oder Video! Referenzen (Ref2VA) nicht mit First/Last-Frame (FL2VA) mischen!",
-    settings:"⚙️ Einstellungen", resolution:"Auflösung:",
-    res1:"512×512 – schneller Test", res2:"768×768 – hohe Qualität (viel langsamer!)",
-    res3:"1344×768 – Querformat", res4:"768×1344 – Hochformat",
+    settings:"⚙️ Einstellungen",
+    model:"Modell:",
+    m_std:"Standard (20 Steps, bewährte Qualität)",
+    m_turbo:"⚡ Turbo LoRA (6 Steps, ~1,5x schneller – für Tests; Finals mit Standard)",
+    quality:"Qualitäts-Preset:",
+    q_fast:"⚡ Schnell – 512p Quick-Preview (sauber)",
+    q_balanced:"⚖️ Ausgewogen – 512p sauber & stabil (empfohlen)",
+    q_high:"🎬 Hoch – 768p nativ (Speicher beobachten, kurze Clips)",
     frames:"Dauer (Frames):", steps:"Steps:",
-    steps_hint:"4–10 = Quick-Preview · 20 = Standard · 50 = Referenzqualität",
-    layers:"Layers:", seed:"Seed (gleicher Seed = vergleichbare Takes):", reuse:"Reuse:",
-    reuse1:"1 – exakt", reuse2:"2 – Standard", reuse3:"3 – schnell",
-    tokenred:" Token-Reduction (~25 % schneller, kann Komposition ändern)",
+    steps_hint:"4–10 = Quick-Preview · 20 = Standard · 50 = Referenzqualität (im Turbo-Modus fest auf 6)",
+    layers:"Layers:", seed:"Seed (gleicher Seed = vergleichbare Takes):",
     firstframe:"First Frame (FL2VA):", lastframe:"Last Frame (FL2VA):",
     btn:"🎬 Video generieren", btn_busy:"Generiere... bitte warten", btn_new:"🎬 Neues Video generieren",
     log:"📟 Live-Log", result:"🎥 Ergebnis", log_ready:"Bereit. Warte auf den ersten Take...",
@@ -237,6 +242,21 @@ function setLang(lang){
   const btn = document.getElementById('btnGenerate');
   btn.innerText = busy ? I18N[lang].btn_busy : I18N[lang].btn;
   document.querySelectorAll('.langbtn').forEach(b=>b.classList.toggle('active', b.dataset.lang===lang));
+}
+
+function syncTurbo(){
+  const turbo = document.querySelector('select[name="model"]').value === 'turbo';
+  const steps = document.querySelector('input[name="steps"]');
+  const stepVal = document.getElementById('stepVal');
+  if (turbo) {
+    steps.dataset.prev = steps.value;
+    steps.value = 6;
+    steps.disabled = true;
+  } else {
+    steps.disabled = false;
+    if (steps.dataset.prev) steps.value = steps.dataset.prev;
+  }
+  stepVal.innerText = steps.value;
 }
 
 function toggleMode() {
