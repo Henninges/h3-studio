@@ -53,6 +53,43 @@ python3 app.py
 
 4. Open http://127.0.0.1:5000 and direct your first take!
 
+Optional: Turbo LoRA (6-step distilled sampling, ~1.5× faster)
+Folds larryvrh/MiniMax-H3-Turbo-Lora (Apache-2.0) into a copy-on-write checkpoint variant (~2–3 GB real disk on APFS) using PR #14's tools/fold_turbo_lora.py. No engine changes needed – the folded checkpoint works with the stock h3 binary at --steps 6.
+
+cd <h3.c folder>
+mkdir -p tools
+curl -L -o tools/fold_turbo_lora.py https://raw.githubusercontent.com/skaiy/h3.c-studio/main/tools/fold_turbo_lora.py
+hf download larryvrh/MiniMax-H3-Turbo-Lora --local-dir ./turbo-lora
+
+python3 tools/fold_turbo_lora.py --checkpoint ./MiniMax-H3/FL2VA/transformer  --lora ./turbo-lora/<adapter>.safetensors --out ./MiniMax-H3-Turbo/FL2VA/transformer
+python3 tools/fold_turbo_lora.py --checkpoint ./MiniMax-H3/Ref2VA/transformer --lora ./turbo-lora/<adapter>.safetensors --out ./MiniMax-H3-Turbo/Ref2VA/transformer
+
+cd MiniMax-H3-Turbo
+ln -s ../../MiniMax-H3/FL2VA/model_index.json FL2VA/model_index.json
+ln -s ../../MiniMax-H3/FL2VA/text_encoder FL2VA/text_encoder
+ln -s ../../MiniMax-H3/FL2VA/audio_vae   FL2VA/audio_vae
+ln -s ../../MiniMax-H3/FL2VA/video_vae   FL2VA/video_vae
+ln -s ../../MiniMax-H3/Ref2VA/tokenizer  FL2VA/tokenizer
+ln -s ../../MiniMax-H3/Ref2VA/tokenizer        Ref2VA/tokenizer
+ln -s ../../MiniMax-H3/Ref2VA/model_index.json Ref2VA/model_index.json
+ln -s ../../MiniMax-H3/Ref2VA/text_encoder Ref2VA/text_encoder
+ln -s ../../MiniMax-H3/Ref2VA/audio_vae   Ref2VA/audio_vae
+ln -s ../../MiniMax-H3/Ref2VA/video_vae   Ref2VA/video_vae
+cd ..
+
+⚠️ Rules (from PR #14): never combine the distilled schedule with --reuse/--core-reuse; floor is 5 steps. h3-studio enforces --steps 6 --reuse 1 automatically when Turbo is selected.
+Benchmarks (real-world, end-to-end)
+M4 Max, 128 GB (this repo's author)
+Resolution	Frames	Steps / Layers	References	Time
+512×512	243 (10 s)	20 / 45	1 image + audio	32 min (incl. cold weight load)
+512×512	243 (10 s)	20 / 45	4 images + audio	21 min (warm cache)
+
+Mode	Steps / reuse	Frames	Time (warm)	Notes
+Standard	 20 / 2	56	4:23	full detail
+Turbo	      6 / 1	56	3:00	~1.46× faster; fine detail (eyes, fingers) slightly softer
+
+Recommendation: Turbo for prompt/composition iteration, Standard for final renders.
+
 Benchmarks (real-world, end-to-end)
 M4 Max, 128 GB (this repo's author)
 Resolution      Frames      Steps/Layers    Reference       Time
@@ -76,9 +113,8 @@ Ref2VA (images/videos/audio) and FL2VA (first/last frame) cannot be mixed.
 Community & Cross-pollination
 Open source thrives when we build on each other's work. This project has learned from and inspired:
 skaiy/h3.c-studio – Another web GUI for h3.c with storyboard/chaining features. Our Context-IR smart defaults and --ref-audio conditioning inspired features there; their Turbo LoRA integration and resumable checkpoints show what's possible. Different tools for different workflows: theirs for multi-shot storytelling, ours for music videos with native audio+video conditioning.
-
 Roadmap
-Turbo LoRA folding support (PR #14 tooling: 5-6 steps instead of 20, ~2x faster)
+Turbo LoRA folding support (PR #14 tooling: 6-step distilled sampling, ~1.5× faster)
 Song storyboard: cut tracks into ≤15s segments, render each with same references + segment audio, auto-concat
 Chunked 5s workflow: first-frame chaining + FFmpeg concat button
 Progress bar parsed from the live log
@@ -87,4 +123,5 @@ Progress bar parsed from the live log
 Credits & License
 h3.c © Salvatore Sanfilippo – MIT
 MiniMax-H3 © MiniMax – own license; weights are not redistributed here
+MiniMax-H3-Turbo-Lora © larryvrh – Apache-2.0
 h3-studio – MIT
